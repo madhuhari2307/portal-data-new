@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AIIEA Portal - Secure Live</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; background-color: #f4f4f4; overflow: hidden; }
+        header { background-color: red; color: white; padding: 12px 5px; text-align: center; font-weight: bold; font-size: 15px; border-bottom: 2px solid black; z-index: 1000; cursor: pointer; user-select: none; }
+        .mobile-top-bar { display: none; background-color: white; padding: 8px 15px; border-bottom: 1px solid #ccc; justify-content: flex-end; z-index: 900; }
+        #menu-toggle { background: white; color: blue; border: 2px solid blue; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        .main-container { display: flex; flex: 1; overflow: hidden; position: relative; }
+        nav { width: 280px; background-color: #FFFFE0; padding: 15px; border-right: 2px solid #ccc; display: flex; flex-direction: column; position: absolute; left: -350px; top: 0; bottom: 0; transition: 0.3s ease; z-index: 6000; overflow-y: auto; }
+        nav.open { left: 0 !important; }
+        .top-nav-actions { display: flex; gap: 5px; padding-bottom: 10px; margin-bottom: 10px; border-bottom: 2px solid #ccc; }
+        .action-btn-box { flex: 1; }
+        #admin-box { display: none; } 
+        .btn-nav-main { width: 100%; padding: 8px 2px; color: white; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 10px; text-transform: uppercase; }
+        .bg-home { background: #007bff; }
+        .bg-admin { background: black; }
+        .bg-exit { background: #cc0000; }
+        .admin-tools { display: none; margin-top: 5px; border-top: 1px solid #ccc; padding-top: 5px; }
+        .btn-tool { width: 100%; padding: 8px; color: white; border: none; font-weight: bold; border-radius: 4px; cursor: pointer; margin-bottom: 4px; font-size: 10px; }
+        .btn-backup { background: #28a745; }
+        .btn-restore { background: #17a2b8; }
+        .btn-pw { background: #6f42c1; }
+        nav h3 { color: blue; cursor: pointer; border-bottom: 1px solid #ddd; padding: 10px 0; margin: 3px 0; font-size: 14px; }
+        .submenu { color: red; margin-left: 10px; display: none; list-style: none; padding: 0; }
+        .submenu li { padding: 12px; font-weight: bold; font-size: 13px; border-bottom: 1px solid #eee; cursor: pointer; background: #fffde0; }
+        section { flex: 1; padding: 8px; display: flex; flex-direction: column; align-items: center; overflow-y: auto; width: 100%; position: relative; }
+        #upload-section { background: #fff; padding: 12px; border-radius: 8px; border: 2px solid red; margin-bottom: 10px; width: 98%; display: none; box-sizing: border-box; }
+        #item-name { width: 100%; margin-bottom: 8px; padding: 10px; border: 1px solid #000; box-sizing: border-box; font-size: 13px; }
+        .display-box { width: 100%; min-height: 400px; border: 2px solid black; background: white; border-radius: 5px; padding: 5px; box-sizing: border-box; overflow-y: auto; }
+        
+        /* Home Grid Layout */
+        .home-grid { display: flex; flex-wrap: wrap; gap: 8px; width: 100%; justify-content: center; }
+        .home-grid img { flex: 1; min-width: 250px; height: 350px; object-fit: contain; border: 2px solid #000; background: #fff9c4; margin-bottom: 10px;}
+        
+        .file-item { display: flex; align-items: center; border-bottom: 1px solid #eee; padding: 5px 4px; background: #ffffff; }
+        .file-info { flex: 1; display: flex; align-items: baseline; overflow: hidden; font-size: 13px; color: #000; gap: 5px; }
+        .file-info b { color: #000; }
+        .file-info span { font-size: 11px; color: #666; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .sl-no { width: 22px; color: red; font-weight: bold; flex-shrink: 0; font-size: 12px; }
+        .action-btn-sm { padding: 3px 6px; font-size: 11px; border: 1px solid #ccc; background: #f9f9f9; cursor: pointer; border-radius: 3px; margin-left: 3px; }
+
+        #viewer-container { display: none; width: 100%; background: #222; border: 2px solid black; margin-top: 5px; padding: 5px; box-sizing: border-box; flex-direction: column; }
+        #viewer-title-header { color: #00ff00; font-weight: bold; font-size: 15px; margin-bottom: 8px; text-align: center; border-bottom: 1px solid yellow; padding: 5px; }
+        #viewer-body { width: 100%; overflow-y: auto; text-align: center; }
+        .overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 5500; }
+        .overlay.active { display: block; }
+        @media (max-width: 768px) { .mobile-top-bar { display: flex; } .home-grid img { min-width: 100%; height: 300px; } }
+        @media (min-width: 769px) { nav { position: static; left: 0 !important; } }
+    </style>
+</head>
+<body onload="initPortal()"> 
+    <header ondblclick="revealAdmin()">ALL INDIA INSURANCE EMPLOYEES' ASSOCIATION</header>
+
+<div class="mobile-top-bar">
+    <button id="menu-toggle" onclick="toggleMenu()">☰ MENU</button>
+</div>
+
+<div class="main-container">
+    <div id="mobile-overlay" class="overlay" onclick="toggleMenu()"></div>
+    <nav id="sidebar">
+        <div class="top-nav-actions">
+            <div class="action-btn-box"><button class="btn-nav-main bg-home" onclick="goHome()">Home</button></div>
+            <div class="action-btn-box" id="admin-box">
+                <button class="btn-nav-main bg-admin" id="login-btn" onclick="adminLogin()">Admin</button>
+                <button class="btn-nav-main bg-admin" id="logout-btn" style="display:none; background:#555;" onclick="adminLogout()">Logout</button>
+            </div>
+            <div class="action-btn-box"><button class="btn-nav-main bg-exit" onclick="exitPortal()">Exit</button></div>
+        </div>
+        <div class="admin-tools" id="admin-tools">
+            <button class="btn-tool btn-backup" onclick="downloadBackup()">💾 BACKUP</button>
+            <button class="btn-tool btn-restore" onclick="triggerRestore()">📂 RESTORE</button>
+            <button class="btn-tool btn-pw" onclick="changePassword()">🔑 PASSWORD</button>
+            <input type="file" id="restore-input" style="display:none;" accept=".json" onchange="handleRestore(event)">
+        </div>
+        <h3 onclick="toggleSub('circ-sub', 'CIRCULARS')">CIRCULARS ▾</h3>
+        <ul id="circ-sub" class="submenu">
+            <li onclick="setCategory('AIIEA Circulars')">AIIEA</li>
+            <li onclick="setCategory('SCZIEF Circulars')">SCZIEF</li>
+            <li onclick="setCategory('ICEU Circulars')">ICEU</li>
+        </ul>
+        <h3 onclick="toggleSub('gall-sub', 'GALLERY')">GALLERY ▾</h3>
+        <ul id="gall-sub" class="submenu">
+            <li onclick="setCategory('AIIEA Gallery')">AIIEA</li>
+            <li onclick="setCategory('SCZIEF Gallery')">SCZIEF</li>
+            <li onclick="setCategory('ICEU Gallery')">ICEU</li>
+        </ul>
+        <h3 onclick="toggleSub('wa-sub', 'WhatsApp - Chats')">WhatsApp - Chats ▾</h3>
+        <ul id="wa-sub" class="submenu">
+            <li onclick="setCategory('AIIEA WhatsApp')">AIIEA</li>
+            <li onclick="setCategory('SCZIEF WhatsApp')">SCZIEF</li>
+            <li onclick="setCategory('ICEU WhatsApp')">ICEU</li>
+        </ul>
+    </nav>
+
+    <section id="main-content">
+        <h2 id="view-title" style="color: red; margin: 8px 0; font-size: 18px; text-decoration: underline; text-align: center;">HOME</h2>
+        <div id="upload-section">
+            <input type="text" id="item-name" placeholder="Enter Title">
+            <input type="file" id="file-input" multiple onchange="showSelectedFiles()" style="font-size:12px;">
+            <div id="file-chosen-list" style="font-size:11px; color:green; margin: 5px 0;">No files selected.</div>
+            <button onclick="handleUpload()" style="background:red; color:white; padding:10px; width:100%; border:none; font-weight:bold; cursor:pointer; font-size:13px;">SAVE TO PORTAL</button>
+        </div>
+        <div id="viewer-container">
+            <div id="viewer-title-header"></div>
+            <button onclick="closeViewer()" style="background:orange; color:white; border:none; padding:10px; font-weight:bold; margin-bottom:5px; width:100%; cursor:pointer;">CLOSE VIEW</button>
+            <div id="viewer-body"></div>
+        </div>
+        <div class="display-box" id="file-list-view"></div>
+    </section>
+</div>
+
+<script>
+    // --- MASTER CONFIGURATION ---
+    // 1. Paste your GitHub Raw JSON link here
+    const MASTER_DATA_URL = "YOUR_RAW_GITHUB_JSON_LINK_HERE"; 
+    
+    // 2. Paste your GitHub Raw Image links here
+    const img1Data = "YOUR_IMAGE_LINK_1";
+    const img2Data = "YOUR_IMAGE_LINK_2";
+    const img3Data = "YOUR_IMAGE_LINK_3";
+
+    let isAdmin = false;
+    let currentCategory = "";
+    let localDB = JSON.parse(localStorage.getItem('aiiea_data')) || [];
+
+    const _secretKnock = "U2F0ZWVzaEAxOTcx"; 
+    let currentPW = localStorage.getItem('aiiea_pw') || atob("QUJDRA==");
+
+    async function initPortal() { 
+        goHome(); 
+        // Sync data from Master Link
+        if (MASTER_DATA_URL && MASTER_DATA_URL !== "YOUR_RAW_GITHUB_JSON_LINK_HERE") {
+            try {
+                const response = await fetch(MASTER_DATA_URL);
+                if (response.ok) {
+                    const cloudData = await response.json();
+                    // Update only if cloud data has more items than local
+                    if (cloudData.length > localDB.length) {
+                        localDB = cloudData;
+                        localStorage.setItem('aiiea_data', JSON.stringify(localDB));
+                        console.log("Portal updated from Master Link.");
+                    }
+                }
+            } catch (e) { console.error("Sync failed", e); }
+        }
+    }
+
+    window.revealAdmin = () => {
+        if (localStorage.getItem('aiiea_master_access') === 'GRANTED') {
+            alert("Already Authorized");
+        } else {
+            let authInput = prompt("Enter Master Key:");
+            if (!authInput) return;
+            if (authInput.trim().toUpperCase() === "MASTER71") {
+                localStorage.setItem('aiiea_master_access', 'GRANTED');
+                alert("Master Key Authorized.");
+            } else { alert("invalid Key"); return; }
+        }
+        let securityInput = prompt("Enter Security Key:");
+        if (!securityInput) return;
+        if (securityInput.trim() === atob(_secretKnock)) {
+            document.getElementById('admin-box').style.display = 'block';
+            alert("Security Key Enabled.");
+        } else { alert("invalid Security Key"); }
+    };
+
+    window.adminLogin = () => { 
+        if (localStorage.getItem('aiiea_master_access') !== "GRANTED") return alert("Denied.");
+        let pass = prompt("Enter Admin Password:");
+        if(pass && pass.trim() === currentPW) { 
+            isAdmin = true; 
+            document.getElementById('login-btn').style.display='none'; 
+            document.getElementById('logout-btn').style.display='block'; 
+            document.getElementById('admin-tools').style.display='block'; 
+            if(currentCategory) document.getElementById('upload-section').style.display='block';
+            renderFiles(); 
+        } else { alert("invalid Password"); }
+    };
+
+    window.adminLogout = () => { 
+        isAdmin = false; 
+        localStorage.removeItem('aiiea_master_access'); 
+        document.getElementById('login-btn').style.display='block'; 
+        document.getElementById('logout-btn').style.display='none'; 
+        document.getElementById('admin-tools').style.display='none'; 
+        document.getElementById('upload-section').style.display='none'; 
+        document.getElementById('admin-box').style.display='none';
+        goHome();
+    };
+
+    window.goHome = () => {
+        currentCategory = "";
+        document.getElementById('view-title').innerText = "HOME";
+        document.getElementById('file-list-view').innerHTML = `
+            <div class="home-grid">
+                <img src="${img1Data}" onerror="this.style.display='none'">
+                <img src="${img2Data}" onerror="this.style.display='none'">
+                <img src="${img3Data}" onerror="this.style.display='none'">
+                <div style="width:100%; text-align:center; padding:10px; color:blue; font-weight:bold;">AIIEA SECURE PORTAL</div>
+            </div>`;
+        document.getElementById('upload-section').style.display = 'none';
+        document.querySelectorAll('.submenu').forEach(s => s.style.display = 'none');
+        closeViewer();
+    };
+
+    window.downloadBackup = () => {
+        const blob = new Blob([JSON.stringify(localDB)], {type: "application/json"});
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `AIIEA_Backup.json`;
+        link.click();
+    };
+
+    window.handleRestore = (event) => {
+        const file = event.target.files[0];
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            localDB = JSON.parse(e.target.result);
+            localStorage.setItem('aiiea_data', JSON.stringify(localDB));
+            renderFiles();
+            alert("Restored.");
+        };
+        reader.readAsText(file);
+    };
+
+    window.triggerRestore = () => document.getElementById('restore-input').click();
+
+    window.changePassword = () => {
+        let old = prompt("Old PW:");
+        if (old && old.trim() === currentPW) {
+            let nw = prompt("New PW:");
+            if(nw) { currentPW = nw.trim(); localStorage.setItem('aiiea_pw', nw.trim()); alert("Saved."); }
+        } else alert("Wrong PW.");
+    };
+
+    window.toggleSub = (id, displayName) => {
+        const el = document.getElementById(id);
+        const isOpen = el.style.display === 'block';
+        document.querySelectorAll('.submenu').forEach(s => s.style.display = 'none');
+        el.style.display = isOpen ? 'none' : 'block';
+        document.getElementById('view-title').innerText = displayName;
+        document.getElementById('file-list-view').innerHTML = `<p style="text-align:center; color:blue; font-size:13px; margin-top:30px;">Select a category from the menu</p>`;
+    };
+
+    window.setCategory = (cat) => {
+        currentCategory = cat;
+        document.getElementById('view-title').innerText = cat.toUpperCase();
+        if(isAdmin) document.getElementById('upload-section').style.display = 'block';
+        closeViewer();
+        renderFiles();
+    };
+
+    window.showSelectedFiles = () => {
+        document.getElementById('file-chosen-list').innerText = "Selected: " + document.getElementById('file-input').files.length;
+    };
+
+    window.handleUpload = () => {
+        const fileInput = document.getElementById('file-input');
+        const titleInput = document.getElementById('item-name');
+        if (!titleInput.value || !fileInput.files.length) return alert("Please enter a title and select files.");
+        const files = Array.from(fileInput.files);
+        let count = 0;
+        files.forEach(file => {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                localDB.push({ id: Date.now() + Math.random(), category: currentCategory, title: titleInput.value.trim(), fileName: file.name, fileData: e.target.result, type: file.type });
+                if(++count === files.length) {
+                    localStorage.setItem('aiiea_data', JSON.stringify(localDB));
+                    titleInput.value = ""; fileInput.value = ""; 
+                    renderFiles();
+                    alert("Files Saved. Remember to download Backup and update GitHub!");
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    };
+
+    window.renderFiles = () => {
+        const listDiv = document.getElementById('file-list-view');
+        if (!currentCategory) return;
+        const filtered = localDB.filter(f => f.category === currentCategory);
+        if(!filtered.length) { listDiv.innerHTML = "<p style='text-align:center; font-size:12px; margin-top:20px;'>No files found in this category.</p>"; return; }
+        
+        listDiv.innerHTML = filtered.reverse().map((f, i) => `
+            <div class="file-item">
+                <div class="sl-no">${i+1})</div>
+                <div class="file-info">
+                   <b>${f.title}</b>
+                   <span>(${f.fileName})</span>
+                </div>
+                <button class="action-btn-sm" onclick="viewInCenter('${f.id}')">👁️</button>
+                <a href="${f.fileData}" download="${f.fileName}"><button class="action-btn-sm">📥</button></a>
+                ${isAdmin ? `<button class="action-btn-sm" style="color:red;" onclick="deleteFile(${f.id})">🗑️</button>` : ''}
+            </div>`).join('');
+    };
+
+    window.deleteFile = (id) => { if(confirm("Permanently delete this file?")) { localDB = localDB.filter(f => f.id != id); localStorage.setItem('aiiea_data', JSON.stringify(localDB)); renderFiles(); } };
+
+    window.viewInCenter = async (id) => {
+        const file = localDB.find(f => f.id == id);
+        document.getElementById('file-list-view').style.display = 'none';
+        document.getElementById('upload-section').style.display = 'none';
+        document.getElementById('viewer-container').style.display = 'flex';
+        document.getElementById('viewer-title-header').innerText = file.title;
+        const vBody = document.getElementById('viewer-body');
+        
+        if(file.type.includes('image')) { 
+            vBody.innerHTML = `<img src="${file.fileData}" style="max-width:100%; border:2px solid white;">`; 
+        } else {
+            vBody.innerHTML = "<div style='color:yellow; padding:20px;'>Generating PDF View... Please Wait.</div>";
+            try {
+                const pdfData = atob(file.fileData.split(',')[1]);
+                const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
+                vBody.innerHTML = "";
+                for(let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const canvas = document.createElement('canvas');
+                    const viewport = page.getViewport({scale: 1.5});
+                    canvas.height = viewport.height; canvas.width = viewport.width;
+                    canvas.style.width = "100%";
+                    canvas.style.marginBottom = "10px";
+                    await page.render({canvasContext: canvas.getContext('2d'), viewport: viewport}).promise;
+                    vBody.appendChild(canvas);
+                }
+            } catch (e) { vBody.innerHTML = "<div style='color:red;'>Error loading PDF. Please use Download button.</div>"; }
+        }
+    };
+
+    window.closeViewer = () => {
+        document.getElementById('viewer-container').style.display = 'none';
+        document.getElementById('file-list-view').style.display = 'block';
+        if(isAdmin && currentCategory) document.getElementById('upload-section').style.display = 'block';
+    };
+
+    window.exitPortal = () => { if(confirm("Are you sure you want to exit?")) window.location.replace("https://www.google.com"); };
+    
+    window.toggleMenu = () => { 
+        document.getElementById('sidebar').classList.toggle('open'); 
+        document.getElementById('mobile-overlay').classList.toggle('active'); 
+    };
+</script>
+</body>
+</html>
